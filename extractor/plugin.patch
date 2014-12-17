@@ -1,0 +1,834 @@
+diff -rup opensmile/buildWithInstalledPortAudio.sh latest/buildWithInstalledPortAudio.sh
+--- opensmile/buildWithInstalledPortAudio.sh	2013-05-17 17:35:21.000000000 +0300
++++ latest/buildWithInstalledPortAudio.sh	2014-12-13 15:40:00.000000000 +0200
+@@ -23,6 +23,8 @@ fi
+ mkdir inst
+ export CXXFLAGS="-O2 -mfpmath=sse -march=native"
+ export CFLAGS="-O2 -mfpmath=sse -march=native"
++#export CPPFLAGS="-DBUILD_WITH_GPL3rdP -DBUILD_LIBSVM -DBUILD_RNN -DBUILD_WITHOUT_EXPERIMENTAL"
++export CPPFLAGS="-DBUILD_LIBSVM -DBUILD_RNN -DBUILD_WITHOUT_EXPERIMENTAL -D_DEBUG"
+ #export CXXFLAGS="-O2 -mfpmath=sse -mtune=athlon64"
+ #export CFLAGS="-O2 -mfpmath=sse -mtune=athlon64"
+ #./configure --prefix=$Pwd/inst --enable-static --disable-shared &&
+diff -rup opensmile/configure.ac latest/configure.ac
+--- opensmile/configure.ac	2013-05-17 17:35:22.000000000 +0300
++++ latest/configure.ac	2014-12-13 15:40:00.000000000 +0200
+@@ -1,6 +1,6 @@
+ 
+-AC_INIT([.],1)
+-AM_INIT_AUTOMAKE(openSMILE,0.0.0)
++AC_INIT(openSMILE,r2.0)
++AM_INIT_AUTOMAKE
+ 
+ 
+ AC_CONFIG_MACRO_DIR([m4])
+Only in opensmile/doc: openSMILE_book.pdf
+Only in latest: .gitignore
+diff -rup opensmile/plugindev/ClassifierResultGUI.cpp latest/plugindev/ClassifierResultGUI.cpp
+--- opensmile/plugindev/ClassifierResultGUI.cpp	2013-05-17 17:35:21.000000000 +0300
++++ latest/plugindev/ClassifierResultGUI.cpp	2014-12-13 15:40:00.000000000 +0200
+@@ -42,7 +42,7 @@ this component is also useful for debugg
+ */
+ 
+ 
+-#include <classifierResultGUI.hpp>
++#include <ClassifierResultGUI.hpp>
+ 
+ #define MODULE "cClassifierResultGUI"
+ 
+@@ -399,7 +399,8 @@ SMILE_THREAD_RETVAL wxClsThreadRunner(vo
+     obj->pApp->smileObj = obj;
+     wxApp::SetInstance(obj->pApp);
+     smileMutexUnlock(obj->wxMtx);
+-    wxEntry(0, NULL);
++    int argc = 0;
++    wxEntry(argc, (char**)NULL);
+     obj->pApp = NULL;
+ //    obj->terminate = 1;
+     printf("wxwin terminate.\n");
+diff -rup opensmile/plugindev/ClassifierResultGUI.hpp latest/plugindev/ClassifierResultGUI.hpp
+--- opensmile/plugindev/ClassifierResultGUI.hpp	2013-05-17 17:35:21.000000000 +0300
++++ latest/plugindev/ClassifierResultGUI.hpp	2014-12-13 15:40:00.000000000 +0200
+@@ -45,8 +45,8 @@ this component is also useful for debugg
+ #ifndef __CCLASSIFIERRESULTGUI_HPP
+ #define __CCLASSIFIERRESULTGUI_HPP
+ 
+-#include <smileCommon.hpp>
+-#include <smileComponent.hpp>
++#include <core/smileCommon.hpp>
++#include <core/smileComponent.hpp>
+ #include <wx/wx.h>
+ 
+ #define COMPONENT_DESCRIPTION_CCLASSIFIERRESULTGUI "This is an example of a cDataSink descendant. It reads data from the data memory and prints it to the console. This component is intended as a template for developers."
+diff -rup opensmile/plugindev/configure.ac latest/plugindev/configure.ac
+--- opensmile/plugindev/configure.ac	2013-05-17 17:35:21.000000000 +0300
++++ latest/plugindev/configure.ac	2014-12-13 15:40:00.000000000 +0200
+@@ -1,12 +1,13 @@
+ 
+-AC_INIT([.],1)
+-AM_INIT_AUTOMAKE(testplugin,0.0.0)
+-
++AC_INIT([testplugin],[1.0])
++AC_CONFIG_MACRO_DIR([m4])
++AM_INIT_AUTOMAKE
+ 
+ AC_PROG_CC
+ AC_PROG_CXX
+ # AC_PROG_RANLIB
+-AC_PROG_LIBTOOL
++LT_INIT
++
+ AM_PROG_CC_C_O
+ 
+ ACX_PTHREAD
+@@ -14,6 +15,22 @@ ACX_PTHREAD
+ #CHECK_HAVE_SEMAINEAPI
+ CHECK_HAVE_OPENSMILELIB
+ 
++
++AM_OPTIONS_WXCONFIG
++reqwx=3.0.0
++AM_PATH_WXCONFIG($reqwx, wxWin=1)
++if test "$wxWin" != 1; then
++	AC_MSG_ERROR([
++      		wxWidgets must be installed on your system.
++		Please check that wx-config is in path, the directory
++		where wxWidgets libraries are installed (returned by
++		'wx-config --libs' or 'wx-config --static --libs' command)
++		is in LD_LIBRARY_PATH or equivalent variable and
++		wxWidgets version is $reqwx or above.
++	])
++fi
++		 
++
+ # CONFIGURE_TARGETS
+ 
+ if test x`uname | grep mingw` != x ; then
+@@ -31,6 +48,8 @@ if test x`uname | grep MINGW` != x ; the
+ fi 
+ 
+ 
+-AM_CONFIG_HEADER(config.h)
+-AC_OUTPUT(Makefile)
++AC_CONFIG_HEADERS(config.h)
++
++AC_CONFIG_FILES([Makefile])
++AC_OUTPUT
+ 
+diff -rup opensmile/plugindev/exampleGuipluginSink.cpp latest/plugindev/exampleGuipluginSink.cpp
+--- opensmile/plugindev/exampleGuipluginSink.cpp	2013-05-17 17:35:21.000000000 +0300
++++ latest/plugindev/exampleGuipluginSink.cpp	2014-12-13 15:40:00.000000000 +0200
+@@ -271,7 +271,8 @@ SMILE_THREAD_RETVAL wxAppThreadRunner(vo
+     cExampleGuipluginSink *obj = (cExampleGuipluginSink*)_data;
+     obj->pApp = new MyApp(); 
+     wxApp::SetInstance(obj->pApp);
+-    wxEntry(0, NULL);
++    int argc=0;
++    wxEntry(argc, (char**)NULL);
+   }
+   SMILE_THREAD_RET;
+ }
+diff -rup opensmile/plugindev/exampleGuipluginSink.hpp latest/plugindev/exampleGuipluginSink.hpp
+--- opensmile/plugindev/exampleGuipluginSink.hpp	2013-05-17 17:35:21.000000000 +0300
++++ latest/plugindev/exampleGuipluginSink.hpp	2014-12-13 15:40:00.000000000 +0200
+@@ -45,8 +45,8 @@ this component is also useful for debugg
+ #ifndef __CEXAMPLEGUIPLUGINSINK_HPP
+ #define __CEXAMPLEGUIPLUGINSINK_HPP
+ 
+-#include <smileCommon.hpp>
+-#include <dataSink.hpp>
++#include <core/smileCommon.hpp>
++#include <core/dataSink.hpp>
+ #include <wx/wx.h>
+ 
+ #define COMPONENT_DESCRIPTION_CEXAMPLEGUIPLUGINSINK "This is an example of a cDataSink descendant. It reads data from the data memory and prints it to the console. This component is intended as a template for developers."
+diff -rup opensmile/plugindev/INSTALL latest/plugindev/INSTALL
+--- opensmile/plugindev/INSTALL	2013-05-17 17:35:21.000000000 +0300
++++ latest/plugindev/INSTALL	2014-12-13 15:40:00.000000000 +0200
+@@ -1,19 +1,25 @@
+ Installation Instructions
+ *************************
+ 
+-Copyright (C) 1994, 1995, 1996, 1999, 2000, 2001, 2002, 2004, 2005,
+-2006 Free Software Foundation, Inc.
++Copyright (C) 1994-1996, 1999-2002, 2004-2013 Free Software Foundation,
++Inc.
+ 
+-This file is free documentation; the Free Software Foundation gives
+-unlimited permission to copy, distribute and modify it.
++   Copying and distribution of this file, with or without modification,
++are permitted in any medium without royalty provided the copyright
++notice and this notice are preserved.  This file is offered as-is,
++without warranty of any kind.
+ 
+ Basic Installation
+ ==================
+ 
+-Briefly, the shell commands `./configure; make; make install' should
+-configure, build, and install this package.  The following
++   Briefly, the shell command `./configure && make && make install'
++should configure, build, and install this package.  The following
+ more-detailed instructions are generic; see the `README' file for
+-instructions specific to this package.
++instructions specific to this package.  Some packages provide this
++`INSTALL' file but do not implement all of the features documented
++below.  The lack of an optional feature in a given package is not
++necessarily a bug.  More recommendations for GNU packages can be found
++in *note Makefile Conventions: (standards)Makefile Conventions.
+ 
+    The `configure' shell script attempts to guess correct values for
+ various system-dependent variables used during compilation.  It uses
+@@ -42,7 +48,7 @@ may remove or edit it.
+ you want to change it or regenerate `configure' using a newer version
+ of `autoconf'.
+ 
+-The simplest way to compile this package is:
++   The simplest way to compile this package is:
+ 
+   1. `cd' to the directory containing the package's source code and type
+      `./configure' to configure the package for your system.
+@@ -53,12 +59,22 @@ The simplest way to compile this package
+   2. Type `make' to compile the package.
+ 
+   3. Optionally, type `make check' to run any self-tests that come with
+-     the package.
++     the package, generally using the just-built uninstalled binaries.
+ 
+   4. Type `make install' to install the programs and any data files and
+-     documentation.
++     documentation.  When installing into a prefix owned by root, it is
++     recommended that the package be configured and built as a regular
++     user, and only the `make install' phase executed with root
++     privileges.
++
++  5. Optionally, type `make installcheck' to repeat any self-tests, but
++     this time using the binaries in their final installed location.
++     This target does not install anything.  Running this target as a
++     regular user, particularly if the prior `make install' required
++     root privileges, verifies that the installation completed
++     correctly.
+ 
+-  5. You can remove the program binaries and object files from the
++  6. You can remove the program binaries and object files from the
+      source code directory by typing `make clean'.  To also remove the
+      files that `configure' created (so you can compile the package for
+      a different kind of computer), type `make distclean'.  There is
+@@ -67,12 +83,22 @@ The simplest way to compile this package
+      all sorts of other programs in order to regenerate files that came
+      with the distribution.
+ 
++  7. Often, you can also type `make uninstall' to remove the installed
++     files again.  In practice, not all packages have tested that
++     uninstallation works correctly, even though it is required by the
++     GNU Coding Standards.
++
++  8. Some packages, particularly those that use Automake, provide `make
++     distcheck', which can by used by developers to test that all other
++     targets like `make install' and `make uninstall' work correctly.
++     This target is generally not run by end users.
++
+ Compilers and Options
+ =====================
+ 
+-Some systems require unusual options for compilation or linking that the
+-`configure' script does not know about.  Run `./configure --help' for
+-details on some of the pertinent environment variables.
++   Some systems require unusual options for compilation or linking that
++the `configure' script does not know about.  Run `./configure --help'
++for details on some of the pertinent environment variables.
+ 
+    You can give `configure' initial values for configuration parameters
+ by setting variables in the command line or in the environment.  Here
+@@ -85,25 +111,41 @@ is an example:
+ Compiling For Multiple Architectures
+ ====================================
+ 
+-You can compile the package for more than one kind of computer at the
++   You can compile the package for more than one kind of computer at the
+ same time, by placing the object files for each architecture in their
+ own directory.  To do this, you can use GNU `make'.  `cd' to the
+ directory where you want the object files and executables to go and run
+ the `configure' script.  `configure' automatically checks for the
+-source code in the directory that `configure' is in and in `..'.
++source code in the directory that `configure' is in and in `..'.  This
++is known as a "VPATH" build.
+ 
+    With a non-GNU `make', it is safer to compile the package for one
+ architecture at a time in the source code directory.  After you have
+ installed the package for one architecture, use `make distclean' before
+ reconfiguring for another architecture.
+ 
++   On MacOS X 10.5 and later systems, you can create libraries and
++executables that work on multiple system types--known as "fat" or
++"universal" binaries--by specifying multiple `-arch' options to the
++compiler but only a single `-arch' option to the preprocessor.  Like
++this:
++
++     ./configure CC="gcc -arch i386 -arch x86_64 -arch ppc -arch ppc64" \
++                 CXX="g++ -arch i386 -arch x86_64 -arch ppc -arch ppc64" \
++                 CPP="gcc -E" CXXCPP="g++ -E"
++
++   This is not guaranteed to produce working output in all cases, you
++may have to build one architecture at a time and combine the results
++using the `lipo' tool if you have problems.
++
+ Installation Names
+ ==================
+ 
+-By default, `make install' installs the package's commands under
++   By default, `make install' installs the package's commands under
+ `/usr/local/bin', include files under `/usr/local/include', etc.  You
+ can specify an installation prefix other than `/usr/local' by giving
+-`configure' the option `--prefix=PREFIX'.
++`configure' the option `--prefix=PREFIX', where PREFIX must be an
++absolute file name.
+ 
+    You can specify separate installation prefixes for
+ architecture-specific files and architecture-independent files.  If you
+@@ -114,16 +156,47 @@ Documentation and other data files still
+    In addition, if you use an unusual directory layout you can give
+ options like `--bindir=DIR' to specify different values for particular
+ kinds of files.  Run `configure --help' for a list of the directories
+-you can set and what kinds of files go in them.
++you can set and what kinds of files go in them.  In general, the
++default for these options is expressed in terms of `${prefix}', so that
++specifying just `--prefix' will affect all of the other directory
++specifications that were not explicitly provided.
++
++   The most portable way to affect installation locations is to pass the
++correct locations to `configure'; however, many packages provide one or
++both of the following shortcuts of passing variable assignments to the
++`make install' command line to change installation locations without
++having to reconfigure or recompile.
++
++   The first method involves providing an override variable for each
++affected directory.  For example, `make install
++prefix=/alternate/directory' will choose an alternate location for all
++directory configuration variables that were expressed in terms of
++`${prefix}'.  Any directories that were specified during `configure',
++but not in terms of `${prefix}', must each be overridden at install
++time for the entire installation to be relocated.  The approach of
++makefile variable overrides for each directory variable is required by
++the GNU Coding Standards, and ideally causes no recompilation.
++However, some platforms have known limitations with the semantics of
++shared libraries that end up requiring recompilation when using this
++method, particularly noticeable in packages that use GNU Libtool.
++
++   The second method involves providing the `DESTDIR' variable.  For
++example, `make install DESTDIR=/alternate/directory' will prepend
++`/alternate/directory' before all installation names.  The approach of
++`DESTDIR' overrides is not required by the GNU Coding Standards, and
++does not work on platforms that have drive letters.  On the other hand,
++it does better at avoiding recompilation issues, and works well even
++when some directory options were not specified in terms of `${prefix}'
++at `configure' time.
++
++Optional Features
++=================
+ 
+    If the package supports it, you can cause programs to be installed
+ with an extra prefix or suffix on their names by giving `configure' the
+ option `--program-prefix=PREFIX' or `--program-suffix=SUFFIX'.
+ 
+-Optional Features
+-=================
+-
+-Some packages pay attention to `--enable-FEATURE' options to
++   Some packages pay attention to `--enable-FEATURE' options to
+ `configure', where FEATURE indicates an optional part of the package.
+ They may also pay attention to `--with-PACKAGE' options, where PACKAGE
+ is something like `gnu-as' or `x' (for the X Window System).  The
+@@ -135,14 +208,58 @@ find the X include and library files aut
+ you can use the `configure' options `--x-includes=DIR' and
+ `--x-libraries=DIR' to specify their locations.
+ 
++   Some packages offer the ability to configure how verbose the
++execution of `make' will be.  For these packages, running `./configure
++--enable-silent-rules' sets the default to minimal output, which can be
++overridden with `make V=1'; while running `./configure
++--disable-silent-rules' sets the default to verbose, which can be
++overridden with `make V=0'.
++
++Particular systems
++==================
++
++   On HP-UX, the default C compiler is not ANSI C compatible.  If GNU
++CC is not installed, it is recommended to use the following options in
++order to use an ANSI C compiler:
++
++     ./configure CC="cc -Ae -D_XOPEN_SOURCE=500"
++
++and if that doesn't work, install pre-built binaries of GCC for HP-UX.
++
++   HP-UX `make' updates targets which have the same time stamps as
++their prerequisites, which makes it generally unusable when shipped
++generated files such as `configure' are involved.  Use GNU `make'
++instead.
++
++   On OSF/1 a.k.a. Tru64, some versions of the default C compiler cannot
++parse its `<wchar.h>' header file.  The option `-nodtk' can be used as
++a workaround.  If GNU CC is not installed, it is therefore recommended
++to try
++
++     ./configure CC="cc"
++
++and if that doesn't work, try
++
++     ./configure CC="cc -nodtk"
++
++   On Solaris, don't put `/usr/ucb' early in your `PATH'.  This
++directory contains several dysfunctional programs; working variants of
++these programs are available in `/usr/bin'.  So, if you need `/usr/ucb'
++in your `PATH', put it _after_ `/usr/bin'.
++
++   On Haiku, software installed for all users goes in `/boot/common',
++not `/usr/local'.  It is recommended to use the following options:
++
++     ./configure --prefix=/boot/common
++
+ Specifying the System Type
+ ==========================
+ 
+-There may be some features `configure' cannot figure out automatically,
+-but needs to determine by the type of machine the package will run on.
+-Usually, assuming the package is built to be run on the _same_
+-architectures, `configure' can figure that out, but if it prints a
+-message saying it cannot guess the machine type, give it the
++   There may be some features `configure' cannot figure out
++automatically, but needs to determine by the type of machine the package
++will run on.  Usually, assuming the package is built to be run on the
++_same_ architectures, `configure' can figure that out, but if it prints
++a message saying it cannot guess the machine type, give it the
+ `--build=TYPE' option.  TYPE can either be a short name for the system
+ type, such as `sun4', or a canonical name which has the form:
+ 
+@@ -150,7 +267,8 @@ type, such as `sun4', or a canonical nam
+ 
+ where SYSTEM can have one of these forms:
+ 
+-     OS KERNEL-OS
++     OS
++     KERNEL-OS
+ 
+    See the file `config.sub' for the possible values of each field.  If
+ `config.sub' isn't included in this package, then this package doesn't
+@@ -168,9 +286,9 @@ eventually be run) with `--host=TYPE'.
+ Sharing Defaults
+ ================
+ 
+-If you want to set default values for `configure' scripts to share, you
+-can create a site shell script called `config.site' that gives default
+-values for variables like `CC', `cache_file', and `prefix'.
++   If you want to set default values for `configure' scripts to share,
++you can create a site shell script called `config.site' that gives
++default values for variables like `CC', `cache_file', and `prefix'.
+ `configure' looks for `PREFIX/share/config.site' if it exists, then
+ `PREFIX/etc/config.site' if it exists.  Or, you can set the
+ `CONFIG_SITE' environment variable to the location of the site script.
+@@ -179,7 +297,7 @@ A warning: not all `configure' scripts l
+ Defining Variables
+ ==================
+ 
+-Variables not defined in a site shell script can be set in the
++   Variables not defined in a site shell script can be set in the
+ environment passed to `configure'.  However, some packages may run
+ configure again during the build, and the customized values of these
+ variables may be lost.  In order to avoid this problem, you should set
+@@ -191,18 +309,27 @@ causes the specified `gcc' to be used as
+ overridden in the site shell script).
+ 
+ Unfortunately, this technique does not work for `CONFIG_SHELL' due to
+-an Autoconf bug.  Until the bug is fixed you can use this workaround:
++an Autoconf limitation.  Until the limitation is lifted, you can use
++this workaround:
+ 
+-     CONFIG_SHELL=/bin/bash /bin/bash ./configure CONFIG_SHELL=/bin/bash
++     CONFIG_SHELL=/bin/bash ./configure CONFIG_SHELL=/bin/bash
+ 
+ `configure' Invocation
+ ======================
+ 
+-`configure' recognizes the following options to control how it operates.
++   `configure' recognizes the following options to control how it
++operates.
+ 
+ `--help'
+ `-h'
+-     Print a summary of the options to `configure', and exit.
++     Print a summary of all of the options to `configure', and exit.
++
++`--help=short'
++`--help=recursive'
++     Print a summary of the options unique to this package's
++     `configure', and exit.  The `short' variant lists options used
++     only in the top level, while the `recursive' variant lists options
++     also present in any nested packages.
+ 
+ `--version'
+ `-V'
+@@ -229,6 +356,15 @@ an Autoconf bug.  Until the bug is fixed
+      Look for the package's source code in directory DIR.  Usually
+      `configure' can determine that directory automatically.
+ 
++`--prefix=DIR'
++     Use DIR as the installation prefix.  *note Installation Names::
++     for more details, including other options available for fine-tuning
++     the installation locations.
++
++`--no-create'
++`-n'
++     Run the configure checks, but stop before creating any output
++     files.
++
+ `configure' also accepts some other, not widely useful, options.  Run
+ `configure --help' for more details.
+-
+diff -rup opensmile/plugindev/m4/opensmile.m4 latest/plugindev/m4/opensmile.m4
+--- opensmile/plugindev/m4/opensmile.m4	2013-05-17 17:35:21.000000000 +0300
++++ latest/plugindev/m4/opensmile.m4	2014-12-13 15:40:00.000000000 +0200
+@@ -11,7 +11,7 @@ AC_ARG_WITH(opensmilelib,
+ 
+ AC_SUBST(OPENSMILELIB_PREFIX)
+ OPENSMILELIB_LIBS="-L${OPENSMILELIB_PREFIX}/.libs -lopensmile"
+-OPENSMILELIB_CFLAGS="-I${OPENSMILELIB_PREFIX}/src"
++OPENSMILELIB_CFLAGS="-I${OPENSMILELIB_PREFIX}/src/include"
+ AC_SUBST(OPENSMILELIB_LIBS)
+ AC_SUBST(OPENSMILELIB_CFLAGS)
+ 
+diff -rup opensmile/plugindev/Makefile.am latest/plugindev/Makefile.am
+--- opensmile/plugindev/Makefile.am	2013-05-17 17:35:21.000000000 +0300
++++ latest/plugindev/Makefile.am	2014-12-13 15:40:00.000000000 +0200
+@@ -1,9 +1,12 @@
+-# NOTE: you need to add custom LIBS and CFLAGS here::::
+ 
+-lib_LTLIBRARIES = libexampleplugin.la
+-libexampleplugin_la_SOURCES = pluginMain.cpp \
+-  plug_exampleSink.cpp
+-libexampleplugin_la_LIBADD = $(OPENSMILELIB_LIBS)
++lib_LTLIBRARIES = libguiplugin.la
++libguiplugin_la_SOURCES = pluginGuiMain.cpp \
++  ClassifierResultGUI.cpp \
++  exampleGuipluginSink.cpp \
++  simpleVisualiserGUI.cpp
+ 
+-INCLUDES = $(OPENSMILELIB_CFLAGS)
++libguiplugin_la_CPPFLAGS = $(WX_CPPFLAGS) $(OPENSMILELIB_CFLAGS)
++libguiplugin_la_CXXFLAGS = $(WX_CXXFLAGS_ONLY)
++libguiplugin_la_CFLAGS=$(WX_CFLAGS_ONLY)
++libguiplugin_la_LIBADD = $(WX_LIBS) $(OPENSMILELIB_LIBS)
+ 
+diff -rup opensmile/plugindev/plug_exampleSink.cpp latest/plugindev/plug_exampleSink.cpp
+--- opensmile/plugindev/plug_exampleSink.cpp	2013-05-17 17:35:21.000000000 +0300
++++ latest/plugindev/plug_exampleSink.cpp	2014-12-13 15:40:00.000000000 +0200
+@@ -82,7 +82,7 @@ printf("I'm here in fetchConfig...\n");
+   
+   filename = getStr("filename");
+ printf("filename=%s\n",filename);
+-printf("log=%i\n",(long)&smileLog);
++printf("log=%li\n",(long)&smileLog);
+ smileLog.message(FMT("test"), 2, "cYEAH");
+ 
+   SMILE_DBG(2,"filename = '%s'",filename);
+@@ -115,7 +115,7 @@ int cExampleSinkPlugin::myTick(long long
+   SMILE_DBG(4,"tick # %i, reading value vector:",t);
+   cVector *vec= reader_->getFrameRel(lag);  //new cVector(nValues+1);
+   if (vec == NULL) return 0;
+-  else reader_->nextFrame();
++  //else reader_->nextFrame();
+ 
+   long vi = vec->tmeta->vIdx;
+   double tm = vec->tmeta->time;
+@@ -124,7 +124,7 @@ int cExampleSinkPlugin::myTick(long long
+   SMILE_IMSG(2,"FUCKING AWSOME PLUGIN OUTPUT:");
+   int i;
+   for (i=0; i<vec->N; i++) {
+-    printf("  (a=%i vi=%i, tm=%fs) %s.%s = %f\n",reader_->getCurR(),vi,tm,reader_->getLevelName(),vec->name(i),vec->dataF[i]);
++    printf("  (a=%li vi=%li, tm=%fs) %s.%s = %f\n",reader_->getCurR(),vi,tm,reader_->getLevelName(),vec->name(i),vec->dataF[i]);
+   }
+ 
+ // SMILE_PRINT("%i",var1,)
+diff -rup opensmile/plugindev/plug_exampleSink.hpp latest/plugindev/plug_exampleSink.hpp
+--- opensmile/plugindev/plug_exampleSink.hpp	2013-05-17 17:35:21.000000000 +0300
++++ latest/plugindev/plug_exampleSink.hpp	2014-12-13 15:40:00.000000000 +0200
+@@ -43,9 +43,9 @@ example plugin: data sink example
+ #ifndef __EXAMPLE_SINK_HPP
+ #define __EXAMPLE_SINK_HPP
+ 
+-#include <smileCommon.hpp>
+-#include <smileComponent.hpp>
+-#include <dataSink.hpp>
++#include <core/smileCommon.hpp>
++#include <core/smileComponent.hpp>
++#include <core/dataSink.hpp>
+ 
+ #define COMPONENT_DESCRIPTION_CEXAMPLESINK "dataSink example, read data and prints it to screen"
+ #define COMPONENT_NAME_CEXAMPLESINK "cExampleSinkPlugin"
+diff -rup opensmile/plugindev/pluginGuiMain.cpp latest/plugindev/pluginGuiMain.cpp
+--- opensmile/plugindev/pluginGuiMain.cpp	2013-05-17 17:35:21.000000000 +0300
++++ latest/plugindev/pluginGuiMain.cpp	2014-12-13 15:40:00.000000000 +0200
+@@ -34,15 +34,15 @@
+ 
+ /* openSMILE plugin loader */
+ 
+-#include <smileCommon.hpp>
+-#include <smileLogger.hpp>
+-#include <componentManager.hpp>
++#include <core/smileCommon.hpp>
++#include <core/smileLogger.hpp>
++#include <core/componentManager.hpp>
+ 
+ 
+ //++ include all your component headers here: ----------------
+ #include <exampleGuipluginSink.hpp>
+ #include <simpleVisualiserGUI.hpp>
+-#include <classifierResultGUI.hpp>
++#include <ClassifierResultGUI.hpp>
+ 
+ //++ ---------------------------------------------------------
+ 
+@@ -94,7 +94,7 @@ extern "C" DLLEXPORT_P sComponentInfo *
+ extern "C" DLLEXPORT_P void unRegisterPluginComponent() {
+   while (master != NULL) {
+     sComponentInfo *tmp = master;
+-    if (master->next != NULL) master = master->next;
++    master = master->next;
+     delete tmp;
+   }
+ }
+diff -rup opensmile/plugindev/pluginMain.cpp latest/plugindev/pluginMain.cpp
+--- opensmile/plugindev/pluginMain.cpp	2013-05-17 17:35:21.000000000 +0300
++++ latest/plugindev/pluginMain.cpp	2014-12-13 15:40:00.000000000 +0200
+@@ -34,9 +34,9 @@
+ 
+ /* openSMILE plugin loader */
+ 
+-#include <smileCommon.hpp>
+-#include <smileLogger.hpp>
+-#include <componentManager.hpp>
++#include <core/smileCommon.hpp>
++#include <core/smileLogger.hpp>
++#include <core/componentManager.hpp>
+ 
+ 
+ //++ include all your component headers here: ----------------
+diff -rup opensmile/plugindev/README latest/plugindev/README
+--- opensmile/plugindev/README	2013-05-17 17:35:21.000000000 +0300
++++ latest/plugindev/README	2014-12-13 15:40:00.000000000 +0200
+@@ -1,2 +1,6 @@
+ The files in this subdirecory are the build tree for opensmile plugins
+ 
++
++autoreconf -i -v
++./configure --enable-silent-rules --with-opensmilelib=.. --prefix=/home/jaan --libdir=/home/jaan/bin/plugins
++make CFLAGS="-g -O0"
+diff -rup opensmile/plugindev/simpleVisualiserGUI.cpp latest/plugindev/simpleVisualiserGUI.cpp
+--- opensmile/plugindev/simpleVisualiserGUI.cpp	2013-05-17 17:35:21.000000000 +0300
++++ latest/plugindev/simpleVisualiserGUI.cpp	2014-12-13 15:40:00.000000000 +0200
+@@ -59,7 +59,7 @@ SMILECOMPONENT_REGCOMP(cSimpleVisualiser
+   // we inherit cDataSink configType and extend it:
+   SMILECOMPONENT_INHERIT_CONFIGTYPE("cDataSink")
+   
+-  SMILECOMPONENT_IFNOTREGAGAIN(
++  SMILECOMPONENT_IFNOTREGAGAIN_BEGIN
+     //ct->setField("filename","The name of a text file to dump values to (this file will be overwritten, if it exists)",(const char *)NULL);
+     //ct->setField("lag","Output data <lag> frames behind",0,0,0);
+     ct->setField("action","type of visualisation action to perform: moving2dplot, movingMatplot","moving2dplot");
+@@ -72,13 +72,14 @@ SMILECOMPONENT_REGCOMP(cSimpleVisualiser
+     ct->setField("inputOffset","additive offset for each input element (the offset is applied before the scaling:  y=(x+offset)*scale ",0.0,ARRAY_TYPE);
+     ct->setField("inputColours","array that configures the plot colours for each input element.",(const char*)NULL,ARRAY_TYPE);
+     ct->setField("matMultiplier","number of times to repeat each line in a mat-plot, use this to zoom in on the y axis",1);
+-  )
++  SMILECOMPONENT_IFNOTREGAGAIN_END
+ 
+   SMILECOMPONENT_MAKEINFO(cSimpleVisualiserGUI);
+ }
+ 
+ 
+ //SMILECOMPONENT_CREATE(cSimpleVisualiserGUI)
++
+ cSmileComponent * cSimpleVisualiserGUI::create(const char*_instname) { 
+   cSmileComponent *c = new cSimpleVisualiserGUI(_instname); 
+   if (c!=NULL) c->setComponentInfo(sconfman,COMPONENT_NAME_CSIMPLEVISUALISERGUI,COMPONENT_DESCRIPTION_CSIMPLEVISUALISERGUI); 
+@@ -87,16 +88,12 @@ cSmileComponent * cSimpleVisualiserGUI::
+ 
+ //--- wx ---
+ 
+-
+-
+-
+ wxRtplotPanel::wxRtplotPanel(wxFrame* parent) :
+-wxPanel(parent),
+-lastT(0),curT(0),
+-//curval(0),lastval(0)
+-paintEventCur(NULL),paintEventLast(NULL)
++  wxPanel(parent),
++  lastT(0),curT(0),
++  //curval(0),lastval(0)
++  paintEventCur(NULL),paintEventLast(NULL)
+ {
+-    
+ }
+  
+ /*
+@@ -167,7 +164,7 @@ void wxRtplotPanel::renderMoving2dPlot(w
+    int coordHeight = 300;
+ 
+    // background
+-   dc.FloodFill(1,1,wxColour("white"),wxFLOOD_BORDER);
++   dc.FloodFill(1,1,*wxWHITE,wxFLOOD_BORDER);
+ 
+     // axes
+     dc.DrawLine(coord0x,coord0y-coordHeight,coord0x,coord0y+10);
+@@ -230,9 +227,10 @@ void wxRtplotPanel::renderMoving2dPlot(w
+       }
+       if (paintEventCur->colours != NULL && paintEventCur->colours[i] != NULL) {
+         // there is some kind of bug here... either wrong indicies, or uncaught exceptions
+-        dc.SetPen(wxPen(wxColour(paintEventCur->colours[i]),2));
++        //dc.SetPen(wxPen(wxColour(paintEventCur->colours[i]),2));
++        dc.SetPen(wxPen(*wxRED,2));
+       } else {
+-        dc.SetPen(wxPen(wxColour("blue"),2));
++        dc.SetPen(wxPen(*wxBLUE,2));
+       }
+       if (curT != 0) {
+         dc.DrawLine(coord0x+lastT,coord0y-lastval,coord0x+curT,coord0y-(paintEventCur->val[i]));
+@@ -503,7 +501,8 @@ SMILE_THREAD_RETVAL wxVisAppThreadRunner
+     wxApp::SetInstance(obj->pApp);
+     // we need a mutex / flag here, to notify the main app that our wxApp was created!
+     smileMutexUnlock(obj->wxMtx);
+-    wxEntry(0, NULL);
++    int argc=0;
++    wxEntry(argc, (char**)NULL);
+     smileMutexLock(obj->wxMtx);
+     //delete (obj->pApp);
+     obj->pApp = NULL;
+@@ -576,7 +575,11 @@ int cSimpleVisualiserGUI::myFinaliseInst
+     }
+   }
+ 
+-  smileMutexCreate(wxMtx);
++  //smileMutexCreate(wxMtx);
++  pthread_mutexattr_t    attr;
++  //pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
++  pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_ERRORCHECK);
++  pthread_mutex_init(&wxMtx, &attr);
+ 
+   //yscale100 = 100.0 / inputScale[0];
+ 
+@@ -586,13 +589,19 @@ int cSimpleVisualiserGUI::myFinaliseInst
+     SMILE_ERR(1,"error creating GUI thread!!");
+   }
+ 
++  while (pApp==NULL || pApp->vframe==NULL) {
++    SMILE_IWRN(2,"################################################ Waiting wx");
++    sleep(1);
++  }
++    SMILE_IWRN(2,"################################################ Waiting done");
++
+   return ret;
+ }
+ 
+ 
+ int cSimpleVisualiserGUI::myTick(long long t)
+ {
+-  SMILE_DBG(4,"tick # %i, reading value vector:",t);
++  SMILE_DBG(4,"tick # %i, reading value vector",t);
+   cVector *vec = NULL;
+   if (!terminate) vec= reader_->getNextFrame();  
+   if (vec == NULL) return 0;
+@@ -601,13 +610,13 @@ int cSimpleVisualiserGUI::myTick(long lo
+   long vi = vec->tmeta->vIdx;
+   double tm = vec->tmeta->time;
+ 
+-  smileMutexLock(wxMtx);
+-  if (pApp == NULL) {
+-    smileMutexUnlock(wxMtx);
+-    if (terminate) return 0;
+-    else return 1;
+-  }
+-  smileMutexUnlock(wxMtx);
++//  smileMutexLock(wxMtx);
++//  if (pApp == NULL) {
++//    smileMutexUnlock(wxMtx);
++//    if (terminate) return 0;
++//    else return 1;
++//  }
++//  smileMutexUnlock(wxMtx);
+ 
+   // update VA status in GUI....
+ //  pApp->AddPendingEvent();
+@@ -636,7 +645,9 @@ int cSimpleVisualiserGUI::myTick(long lo
+ //  myevent.SetInt((int)((data+inputOffset[nr])*inputScale[nr]));  // pass some data along the event, a number in this case
+ //  myevent.SetString(vec->fmeta->getName(idx)); // TODO: this name is not present when using inputsIdx in the config...
+   myevent.SetClientData(pe);
++  SMILE_DBG(3,"notify app");
+   pApp->vframe->GetEventHandler()->AddPendingEvent( myevent );
++  SMILE_DBG(3,"notified app");
+   //smileMutexUnlock(wxMtx);
+ 
+   // tick success
+diff -rup opensmile/plugindev/simpleVisualiserGUI.hpp latest/plugindev/simpleVisualiserGUI.hpp
+--- opensmile/plugindev/simpleVisualiserGUI.hpp	2013-05-17 17:35:21.000000000 +0300
++++ latest/plugindev/simpleVisualiserGUI.hpp	2014-12-13 15:40:00.000000000 +0200
+@@ -45,8 +45,8 @@ this component is also useful for debugg
+ #ifndef __CSIMPLEVISUALISERGUI_HPP
+ #define __CSIMPLEVISUALISERGUI_HPP
+ 
+-#include <smileCommon.hpp>
+-#include <dataSink.hpp>
++#include <core/smileCommon.hpp>
++#include <core/dataSink.hpp>
+ #include <wx/wx.h>
+ 
+ #define COMPONENT_DESCRIPTION_CSIMPLEVISUALISERGUI "This is an example of a cDataSink descendant. It reads data from the data memory and prints it to the console. This component is intended as a template for developers."
+Only in opensmile/progsrc/include: smilextract
+Only in opensmile/progsrc/include: tools
+diff -rup opensmile/src/core/componentManager.cpp latest/src/core/componentManager.cpp
+--- opensmile/src/core/componentManager.cpp	2013-05-17 17:35:21.000000000 +0300
++++ latest/src/core/componentManager.cpp	2014-12-13 15:40:00.000000000 +0200
+@@ -1171,7 +1171,7 @@ long cComponentManager::tick(int threadI
+     }
+   }
+ #ifdef DEBUG
+-  if (nRun < nRunnable) { SMILE_DBG(4,"not all components were run during tick %i (threadID: %i)! (%i<%i)",tickNr,threadId, nRun,nRunnable); }
++  if (nRun < nRunnable) { SMILE_DBG(4,"not all components were run during tick %lli (threadID: %i)! (%i<%i)",tickNr,threadId, nRun,nRunnable); }
+   else { SMILE_DBG(4,"ran all components in thread %i (tick: %i)",threadId,(int)tickNr); }
+ #endif
+   if (execDebug) { // show summary of components executed during this tick
+diff -rup opensmile/src/dsp/signalGenerator.cpp latest/src/dsp/signalGenerator.cpp
+--- opensmile/src/dsp/signalGenerator.cpp	2013-05-17 17:35:21.000000000 +0300
++++ latest/src/dsp/signalGenerator.cpp	2014-12-13 15:40:00.000000000 +0200
+@@ -315,7 +315,7 @@ int cSignalGenerator::myTick(long long t
+     switch(noiseType) {
+       case NOISE_WHITE:
+         float random;
+-        random = ((float)rand() / (float)(RAND_MAX + 1));
++        random = (float)(rand() / (RAND_MAX + 1.0));
+         v = (FLOAT_DMEM)scale * (FLOAT_DMEM)( (2.f * ((random * c2) + (random * c2) + (random * c2)) - 3.f * (c2 - 1.f)) * c3 );
+         for (i=0; i<nValues; i++) {
+           vec_->dataF[i] = v;
+Only in opensmile/src: gpl
+diff -rup opensmile/src/include/core/svn_version.hpp latest/src/include/core/svn_version.hpp
+--- opensmile/src/include/core/svn_version.hpp	2013-05-17 17:35:20.000000000 +0300
++++ latest/src/include/core/svn_version.hpp	2014-12-13 15:40:00.000000000 +0200
+@@ -1,2 +1,2 @@
+-#define OPENSMILE_SOURCE_REVISION "988M"
+-#define OPENSMILE_BUILD_DATE "Fr 17. Mai 16:32:12 CEST 2013"
+\ No newline at end of file
++#define OPENSMILE_SOURCE_REVISION "Unversioned directory"
++#define OPENSMILE_BUILD_DATE "Sun Nov  2 14:37:51 EET 2014"
+\ No newline at end of file
+Only in opensmile/src/include: gpl
+diff -rup opensmile/src/portaudio/portaudioWavplayer.cpp latest/src/portaudio/portaudioWavplayer.cpp
+--- opensmile/src/portaudio/portaudioWavplayer.cpp	2013-05-17 17:35:21.000000000 +0300
++++ latest/src/portaudio/portaudioWavplayer.cpp	2014-12-13 15:40:00.000000000 +0200
+@@ -404,6 +404,9 @@ int cPortaudioWavplayer::processComponen
+       playIdx = getPlayIdxFromClassidx((float)(_msg->floatData[0]));
+     }
+     if (playIdx >= 0) triggerPlayback(playIdx);
++  } else if (isMessageType(_msg,"turnStart") || isMessageType(_msg,"turnEnd")) {
++      playIdx = getPlayIdxFromClassname(_msg->msgtype);
++      if (playIdx >= 0) triggerPlayback(playIdx);
+   }
+   return 0;
+ }

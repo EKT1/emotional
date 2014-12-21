@@ -9,16 +9,16 @@ This is an adapted example model from [SEMAINE project](http://www.semaine-proje
 
 Some of most important optional parameters are:
 
-  - h 
+  -h 
     prints help text about all available options
 
-  - listdevices 1
+  -listdevices 1
     list available portaudio audio devices
 
-  - device 2
+  -device 2
     select input device
 
-  - samplerate 16000
+  -samplerate 16000
     change sample rate
 
 

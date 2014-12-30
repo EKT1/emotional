@@ -35,7 +35,7 @@ The files of the SVM model generated from the trainig set:
 `SMILEextract` configuration files:
 
  - extract.ini - configuration file for feature extraction from the WAV files 
- - detect.ini  - configuration for running the detection process using the microfone. Microfone level should be adjusted for proper turn detection.
+ - detect.ini  - configuration for running the detection process using the microphone. Microphone level should be adjusted for proper turn detection.
 
 Common configuration files used by `detect.ini` and `extract.ini`:
 

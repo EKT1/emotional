@@ -1,5 +1,5 @@
 This SVM model uses prosody features to detect the positive/neutral/negative attitude from speech.
-Features are extracted with the OpenSmile program `SMILEextract`.
+Features are extracted with the [openSmile](https://audeering.com) program `SMILEextract`.
 The training set is calculated from the *EKI spontaneous speech corpus* (567 sentences from 4 speakers).
 
 The detection process can be started by issuing the command:
